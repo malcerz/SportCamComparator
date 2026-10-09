@@ -26,8 +26,8 @@ if (-not (Test-Path "third_party\ffmpeg\bin\ffmpeg.exe")) { throw "FFmpeg missin
 if (-not $SkipBuild) {
     # 3. Zbudować natywnego helpera
     Write-Host "Building C++ helpers..."
-    .\build_gpu_exporter.ps1 -Configuration Release -Clean
-    .\build_gpu_exporter_nvidia_compat.ps1 -Configuration Release -Clean
+    # .\build_gpu_exporter.ps1 -Configuration Release -Clean
+    # .\build_gpu_exporter_nvidia_compat.ps1 -Configuration Release -Clean
 
     # 4. Skompilować aplikację przez Nuitkę
     # 5. Skopiować wymagany runtime
@@ -50,8 +50,7 @@ if (Test-Path "LICENSE.txt") {
     Copy-Item -Path "LICENSE.txt" -Destination "$DistDir\" -Force
 }
 
-Write-Host "Overwriting Qt FFmpeg DLLs with Full versions to prevent MSIX DLL shadowing..."
-Copy-Item -Path "third_party\ffmpeg\bin\*.dll" -Destination "$DistDir\" -Force
+# (hack usunięty zgodnie z żądaniem usera)
 
 
 # 6. Sprawdzić kompletność plików
@@ -65,7 +64,8 @@ $MsixLayout = "dist\msix_layout"
 if (Test-Path $MsixLayout) { Remove-Item -Recurse -Force $MsixLayout }
 New-Item -ItemType Directory -Path $MsixLayout | Out-Null
 
-Copy-Item -Path "$DistDir\*" -Destination $MsixLayout -Recurse -Force
+New-Item -ItemType Directory -Path "$MsixLayout\app" | Out-Null
+Copy-Item -Path "$DistDir\*" -Destination "$MsixLayout\app" -Recurse -Force
 Copy-Item -Path "packaging\windows\msix\AppxManifest.xml" -Destination $MsixLayout -Force
 Copy-Item -Path "packaging\windows\msix\Assets" -Destination $MsixLayout -Recurse -Force
 

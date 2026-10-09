@@ -10,12 +10,13 @@ A copy of the LGPLv3 can be found at: https://www.gnu.org/licenses/lgpl-3.0.html
 The source code for PySide6 and Qt can be obtained from the Qt Project website.
 Dynamically linked libraries of PySide6 are included in this distribution. Users may replace these dynamically linked libraries with their own compatible versions subject to LGPL requirements.
 
-2. FFmpeg
-This software includes pre-compiled binaries from the FFmpeg project (https://ffmpeg.org/).
+2. FFmpeg & KomparatorGpuExporter
+This software includes pre-compiled binaries and libraries from the FFmpeg project (https://ffmpeg.org/).
 Based on the build configuration (including `--enable-gpl` and `--enable-version3`), these binaries are distributed under the GNU General Public License (GPL) version 3.0.
 FFmpeg is a trademark of Fabrice Bellard, originator of the FFmpeg project.
-The application interacts with FFmpeg solely via external command-line execution and does not link against FFmpeg libraries directly in the main application code (mere aggregation).
-Source code for this specific build of FFmpeg can be obtained from the distributor of the binaries (e.g., Gyan Doshi / gyan.dev) or the official FFmpeg repository. 
+The native C++ helper `KomparatorGpuExporter.exe` dynamically links against FFmpeg libraries (`avcodec`, `avformat`, `avutil`, `avfilter`). Consequently, the helper application is distributed under the terms of the GNU GPLv3.
+The main Python application `SportCamComparator.exe` interacts with FFmpeg and the native helper solely via external command-line execution and does not link against FFmpeg libraries directly in the main Python application code.
+Source code for this specific build of FFmpeg can be obtained from the distributor of the binaries (e.g., Gyan Doshi / gyan.dev) or the official FFmpeg repository. The source code for the native helper is available in the project repository.
 
 3. Other Python Packages
 Other dependencies are licensed under their respective open-source licenses (e.g., MIT, BSD, Apache 2.0).

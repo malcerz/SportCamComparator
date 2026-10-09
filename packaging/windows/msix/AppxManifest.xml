@@ -32,7 +32,7 @@
   <Applications>
     <Application
       Id="SportCamComparator"
-      Executable="SportCamComparator.exe"
+      Executable="app\SportCamComparator.exe"
       EntryPoint="Windows.FullTrustApplication">
       <uap:VisualElements
         DisplayName="SportCamComparator"
