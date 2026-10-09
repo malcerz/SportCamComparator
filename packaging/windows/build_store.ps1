@@ -46,6 +46,9 @@ Remove-Item -Path "$DistDir\bin\ffplay.exe" -ErrorAction SilentlyContinue
 
 # Also copy preview_video.qml to dist root because __file__ resolves to dist root
 Copy-Item -Path "src\preview_video.qml" -Destination "$DistDir\" -Force
+if (Test-Path "LICENSE.txt") {
+    Copy-Item -Path "LICENSE.txt" -Destination "$DistDir\" -Force
+}
 
 # 6. Sprawdzić kompletność plików
 if (-not (Test-Path "$DistDir\SportCamComparator.exe")) { throw "SportCamComparator.exe not found in dist" }
@@ -97,7 +100,11 @@ $SizeMB = [math]::Round((Get-Item $MsixFile).Length / 1MB, 2)
 
 # 10. Wypisać ścieżkę do gotowego pliku
 Write-Host "==================================================" -ForegroundColor Green
-Write-Host " SUCCESS! MSIX created and signed. " -ForegroundColor Green
+if ($Configuration -eq "Dev") {
+    Write-Host " SUCCESS! MSIX created and signed. " -ForegroundColor Green
+} else {
+    Write-Host " SUCCESS! MSIX created for Store (Unsigned). " -ForegroundColor Green
+}
 Write-Host " Package: $(Resolve-Path $MsixFile)" -ForegroundColor Yellow
 Write-Host " Size:    $SizeMB MB" -ForegroundColor Yellow
 Write-Host " SHA-256: $($Hash.Hash)" -ForegroundColor Yellow

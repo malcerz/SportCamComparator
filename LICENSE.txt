@@ -1,0 +1,21 @@
+SportCamComparator - License Information
+
+SportCamComparator is distributed under the MIT License.
+
+=== THIRD-PARTY LICENSES ===
+
+1. PySide6 (Qt for Python)
+PySide6 is licensed under the GNU Lesser General Public License (LGPL) version 3.
+A copy of the LGPLv3 can be found at: https://www.gnu.org/licenses/lgpl-3.0.html
+The source code for PySide6 and Qt can be obtained from the Qt Project website.
+Dynamically linked libraries of PySide6 are included in this distribution.
+
+2. FFmpeg
+This software uses libraries from the FFmpeg project under the GNU General Public License (GPL) version 3.0.
+FFmpeg is a trademark of Fabrice Bellard, originator of the FFmpeg project.
+The source code for FFmpeg can be found at: https://ffmpeg.org/
+This application interacts with FFmpeg via command-line execution and bundles pre-compiled FFmpeg binaries.
+
+3. Other Python Packages
+Other dependencies are licensed under their respective open-source licenses (e.g., MIT, BSD, Apache 2.0).
+Please refer to the documentation of each package for specific license terms.

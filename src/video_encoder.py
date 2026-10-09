@@ -17,7 +17,7 @@ _SIZE_PROBE_CACHE: dict[tuple, tuple[bool, str]] = {}
 
 def get_app_root() -> Path:
     """Return absolute application root path, independent of current working directory."""
-    if getattr(sys, "frozen", False):
+    if "__compiled__" in globals() or getattr(sys, "frozen", False):
         return Path(sys.executable).resolve().parent
     return Path(__file__).resolve().parent.parent
 
@@ -99,6 +99,9 @@ def resolve_legacy_ffmpeg(hw: str = "CPU") -> str:
     if common_bin.is_file():
         return str(common_bin)
 
+    if "__compiled__" in globals() or getattr(sys, "frozen", False):
+        return str(common_bin) # Force local path in packaged app
+
     system_ffmpeg = shutil.which("ffmpeg")
     if system_ffmpeg:
         return system_ffmpeg
@@ -123,6 +126,9 @@ def resolve_legacy_ffprobe(hw: str = "CPU") -> str:
     common_bin = app_root / "bin" / "ffprobe.exe"
     if common_bin.is_file():
         return str(common_bin)
+
+    if "__compiled__" in globals() or getattr(sys, "frozen", False):
+        return str(common_bin) # Force local path in packaged app
 
     system_ffprobe = shutil.which("ffprobe")
     if system_ffprobe:
