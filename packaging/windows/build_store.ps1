@@ -50,6 +50,10 @@ if (Test-Path "LICENSE.txt") {
     Copy-Item -Path "LICENSE.txt" -Destination "$DistDir\" -Force
 }
 
+Write-Host "Overwriting Qt FFmpeg DLLs with Full versions to prevent MSIX DLL shadowing..."
+Copy-Item -Path "third_party\ffmpeg\bin\*.dll" -Destination "$DistDir\" -Force
+
+
 # 6. Sprawdzić kompletność plików
 if (-not (Test-Path "$DistDir\SportCamComparator.exe")) { throw "SportCamComparator.exe not found in dist" }
 if (-not (Test-Path "$DistDir\bin\KomparatorGpuExporter.exe")) { throw "KomparatorGpuExporter missing in dist" }

@@ -121,10 +121,11 @@ class GPMFTelemetry:
         """Read creation_time from MP4 container metadata via ffprobe."""
         import json
         import subprocess
+        from video_encoder import resolve_legacy_ffprobe
 
         try:
             p = subprocess.run(
-                ["ffprobe", "-v", "error", "-show_format", "-of", "json", filename],
+                [resolve_legacy_ffprobe("CPU"), "-v", "error", "-show_format", "-of", "json", filename],
                 capture_output=True, text=True, timeout=5,
             )
             if p.returncode != 0:

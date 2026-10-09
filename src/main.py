@@ -47,7 +47,17 @@ from i18n import I18n
 
 def _check_deps():
     """Show error dialog if ffmpeg or ffprobe are missing."""
-    missing = [e for e in ("ffmpeg", "ffprobe") if not shutil.which(e)]
+    from video_encoder import resolve_legacy_ffmpeg, resolve_legacy_ffprobe
+    missing = []
+    try:
+        subprocess.run([resolve_legacy_ffmpeg("CPU"), "-version"], capture_output=True, timeout=5, check=True)
+    except Exception:
+        missing.append("ffmpeg")
+    try:
+        subprocess.run([resolve_legacy_ffprobe("CPU"), "-version"], capture_output=True, timeout=5, check=True)
+    except Exception:
+        missing.append("ffprobe")
+        
     if missing:
         from PySide6.QtWidgets import QMessageBox, QApplication
         app = QApplication(sys.argv)
@@ -66,9 +76,10 @@ def _detect_gpu():
 
     Zwraca: (gpu_label: str, has_nvenc: bool, has_qsv: bool, has_amf: bool)
     """
+    from video_encoder import resolve_legacy_ffmpeg
     try:
         p = subprocess.run(
-            ["ffmpeg", "-hide_banner", "-encoders"],
+            [resolve_legacy_ffmpeg("CPU"), "-hide_banner", "-encoders"],
             capture_output=True, text=True, timeout=10,
         )
         out = p.stdout + p.stderr
@@ -1423,8 +1434,9 @@ class MainWindow(QMainWindow):
             MAX_SEC = 120     # pierwsze 120s
 
             def extract_audio(path: str) -> np.ndarray:
+                from video_encoder import resolve_legacy_ffmpeg
                 cmd = [
-                    "ffmpeg", "-y",
+                    resolve_legacy_ffmpeg("CPU"), "-y",
                     "-t", str(MAX_SEC),
                     "-i", path,
                     "-ac", "1",

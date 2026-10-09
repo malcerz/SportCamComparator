@@ -58,11 +58,12 @@ _STRUCT_SIZE = {
 }
 
 
-def find_gpmf_stream_index(video_path: str | Path, ffprobe_exe: str = "ffprobe") -> Optional[int]:
+def find_gpmf_stream_index(video_path: str | Path) -> Optional[int]:
     """Locate the ffmpeg stream index carrying the GPMF/GoPro metadata track."""
+    from video_encoder import resolve_legacy_ffprobe
     try:
         p = subprocess.run(
-            [ffprobe_exe, "-v", "error", "-show_streams", "-of", "json", str(video_path)],
+            [resolve_legacy_ffprobe("CPU"), "-v", "error", "-show_streams", "-of", "json", str(video_path)],
             capture_output=True, text=True,
         )
         if p.returncode != 0:
@@ -83,15 +84,16 @@ def find_gpmf_stream_index(video_path: str | Path, ffprobe_exe: str = "ffprobe")
         return None
 
 
-def extract_gpmf_ffmpeg(video_path: str | Path, ffmpeg_exe: str = "ffmpeg", ffprobe_exe: str = "ffprobe") -> bytes:
+def extract_gpmf_ffmpeg(video_path: str | Path) -> bytes:
     """Extract the raw GPMF binary payload from a video file via ffmpeg stream copy."""
-    stream_index = find_gpmf_stream_index(video_path, ffprobe_exe=ffprobe_exe)
+    from video_encoder import resolve_legacy_ffmpeg
+    stream_index = find_gpmf_stream_index(video_path)
     if stream_index is None:
         raise RuntimeError("No GPMF stream found in the file.")
     tmp = tempfile.NamedTemporaryFile(delete=False, suffix=".bin")
     tmp.close()
     try:
-        cmd = [ffmpeg_exe, "-y", "-i", str(video_path), "-map", f"0:{stream_index}", "-c", "copy", "-f", "data", tmp.name]
+        cmd = [resolve_legacy_ffmpeg("CPU"), "-y", "-i", str(video_path), "-map", f"0:{stream_index}", "-c", "copy", "-f", "data", tmp.name]
         p = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
         if p.returncode != 0:
             raise RuntimeError(
@@ -107,7 +109,7 @@ def extract_gpmf_ffmpeg(video_path: str | Path, ffmpeg_exe: str = "ffmpeg", ffpr
             pass
 
 
-def extract_gpmf(video_path, ffmpeg_exe='ffmpeg', ffprobe_exe='ffprobe', cancel_event=None):
+def extract_gpmf(video_path, cancel_event=None):
     from telemetry_mp4 import MP4Metadata, TelemetryError
     try:
         return MP4Metadata(video_path).read_track_payload(cancel_event=cancel_event)
@@ -115,7 +117,7 @@ def extract_gpmf(video_path, ffmpeg_exe='ffmpeg', ffprobe_exe='ffprobe', cancel_
         if cancel_event is not None and cancel_event.is_set():
             raise
         print(f'GPMF_NATIVE_UNSUPPORTED -> FFmpeg fallback: {exc}')
-        return extract_gpmf_ffmpeg(video_path, ffmpeg_exe, ffprobe_exe)
+        return extract_gpmf_ffmpeg(video_path)
 
 
 def decode_gpmf(t: str, repeat: int, payload: bytes) -> Any:

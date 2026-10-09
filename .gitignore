@@ -40,3 +40,7 @@ __pycache__/
 *.msix
 *.exe
 runtime/
+
+*.cer
+*.msix
+runtime/
