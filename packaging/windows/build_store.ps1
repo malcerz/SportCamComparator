@@ -43,6 +43,7 @@ Copy-Item -Path "bin\*" -Destination "$DistDir\bin\" -Recurse -Force
 Remove-Item -Path "$DistDir\bin\*.json" -ErrorAction SilentlyContinue
 Remove-Item -Path "$DistDir\bin\*.png" -ErrorAction SilentlyContinue
 Remove-Item -Path "$DistDir\bin\ffplay.exe" -ErrorAction SilentlyContinue
+Remove-Item -Path "$DistDir\bin\diag_rot.exe" -ErrorAction SilentlyContinue
 
 # Also copy preview_video.qml to dist root because __file__ resolves to dist root
 Copy-Item -Path "src\preview_video.qml" -Destination "$DistDir\" -Force
@@ -57,6 +58,10 @@ if (Test-Path "LICENSE.txt") {
 if (-not (Test-Path "$DistDir\SportCamComparator.exe")) { throw "SportCamComparator.exe not found in dist" }
 if (-not (Test-Path "$DistDir\bin\KomparatorGpuExporter.exe")) { throw "KomparatorGpuExporter missing in dist" }
 if (-not (Test-Path "$DistDir\bin\ffmpeg.exe")) { throw "ffmpeg missing in dist" }
+
+# Apply DPI awareness manifest
+$mt = (Get-ChildItem "C:\Program Files (x86)\Windows Kits\10\bin" -Filter mt.exe -Recurse | Where-Object {$_.FullName -like "*\x64\mt.exe"} | Select-Object -First 1).FullName
+& $mt -manifest dpi_manifest.xml -updateresource:"$DistDir\SportCamComparator.exe;#1" | Out-Null
 
 # 7. Przygotować manifest i zasoby
 Write-Host "Preparing MSIX layout..."
@@ -113,3 +118,5 @@ Write-Host " Package: $(Resolve-Path $MsixFile)" -ForegroundColor Yellow
 Write-Host " Size:    $SizeMB MB" -ForegroundColor Yellow
 Write-Host " SHA-256: $($Hash.Hash)" -ForegroundColor Yellow
 Write-Host "==================================================" -ForegroundColor Green
+
+
