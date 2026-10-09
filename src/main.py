@@ -925,7 +925,10 @@ class MainWindow(QMainWindow):
         print(f"  Komenda: {sys.executable} {' '.join(new_argv)}")
 
         # Uruchom nowy proces i natychmiast zakoncz biezacy
-        subprocess.Popen([sys.executable] + new_argv)
+        if getattr(sys, "frozen", False):
+            subprocess.Popen([sys.executable] + new_argv[1:])
+        else:
+            subprocess.Popen([sys.executable] + new_argv)
         sys.exit(0)
 
     # ══════════════════════════════════════════════════════════════════

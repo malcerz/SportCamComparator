@@ -1,81 +1,42 @@
-# Python bytecode and test caches
+# Python
 __pycache__/
 *.py[cod]
 *$py.class
-.pytest_cache/
-.mypy_cache/
-.ruff_cache/
-.coverage
-htmlcov/
 
-# Local environments and editor state
-.venv/
+# PyInstaller
+build/
+dist/
+*.spec
+
+# Wideo
+*.mp4
+*.mov
+*.avi
+*.mkv
+
+# Komparator tymczasowe pliki
+_ass_temp_komp/
+
+# Środowisko wirtualne
 venv/
 env/
-.idea/
+.venv/
+
+# IDE
 .vscode/
-*.user
-*.suo
-*.swp
+.idea/
 
-# Build and packaging output
-/build/
-/dist/
-/bin/
-scr/build/
-scr/dist/
+# Native build artifacts
+bin/
 *.obj
-*.o
-*.pdb
-*.ilk
-*.exp
-*.idb
-*.pyz
-*.pkg
 
-# Local runtime and downloaded native dependencies
-/runtime/
-/third_party/ffmpeg/
-*.dll
-*.exe
-*.lib
-*.a
-
-# Video and generated media files
-*.mp4
-*.MP4
-*.mov
-*.MOV
-*.avi
-*.AVI
-*.mkv
-*.MKV
-*.webm
-*.WEBM
-*.m4v
-*.M4V
-*.wav
-*.WAV
-*.flac
-*.FLAC
-
-# Generated logs, archives, and scratch files
-*.log
-*.tmp
-*.temp
-*.bak
-*.old
-*.zip
-*.7z
-*.rar
-*.part
-*.crdownload
-_ass_temp_komp/
+# Local verification output (clips, logs, compact telemetry snapshots)
 tests/artifacts/
 
-# Local credentials and machine-specific configuration
-.env
-.env.*
-!.env.example
-secrets.*
-local_settings.py
+dist/
+build/
+__pycache__/
+*.cer
+*.msix
+*.exe
+runtime/
