@@ -76,8 +76,17 @@ $CertThumbprint = "BE7EB1E859099EFC95A0B77885242E954E978F36"
 & signtool.exe sign /sha1 $CertThumbprint /fd SHA256 /a $MsixFile
 if ($LASTEXITCODE -ne 0) { throw "SignTool failed" }
 
+Write-Host "Running pytest verification..."
+python -m pytest tests/
+if ($LASTEXITCODE -ne 0) { throw "Tests failed" }
+
+$Hash = Get-FileHash $MsixFile -Algorithm SHA256
+$SizeMB = [math]::Round((Get-Item $MsixFile).Length / 1MB, 2)
+
 # 10. Wypisać ścieżkę do gotowego pliku
 Write-Host "==================================================" -ForegroundColor Green
-Write-Host " SUCCESS! MSIX created and signed: " -ForegroundColor Green
-Write-Host " $(Resolve-Path $MsixFile)" -ForegroundColor Yellow
+Write-Host " SUCCESS! MSIX created and signed. " -ForegroundColor Green
+Write-Host " Package: $(Resolve-Path $MsixFile)" -ForegroundColor Yellow
+Write-Host " Size:    $SizeMB MB" -ForegroundColor Yellow
+Write-Host " SHA-256: $($Hash.Hash)" -ForegroundColor Yellow
 Write-Host "==================================================" -ForegroundColor Green

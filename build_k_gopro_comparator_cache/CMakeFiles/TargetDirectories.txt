@@ -1,0 +1,3 @@
+K:/GoPro/Comparator/build/CMakeFiles/KomparatorGpuExporter.dir
+K:/GoPro/Comparator/build/CMakeFiles/edit_cache.dir
+K:/GoPro/Comparator/build/CMakeFiles/rebuild_cache.dir

@@ -1,0 +1,13 @@
+# ninja log v6
+37	8734	8131583320769335	CMakeFiles/KomparatorGpuExporter.dir/native/KomparatorGpuExporter/ExportPipeline.cpp.obj	6ccaa272b0dd8851
+8735	9960	8131583407747613	K:/GoPro/Comparator/bin/KomparatorGpuExporter.exe	ec49f9f6395cd7cf
+26	9311	8131507694278380	CMakeFiles/KomparatorGpuExporter.dir/native/KomparatorGpuExporter/DemuxerDecoder.cpp.obj	d1f06cce8b7f7fbd
+33	7082	8131583320729354	CMakeFiles/KomparatorGpuExporter.dir/native/KomparatorGpuExporter/ExportPreview.cpp.obj	d00785c41a640bef
+40	9248	8131507694418454	CMakeFiles/KomparatorGpuExporter.dir/native/KomparatorGpuExporter/HwEncoder.cpp.obj	b59380245a4f6f4d
+31	9218	8131507694328392	CMakeFiles/KomparatorGpuExporter.dir/native/KomparatorGpuExporter/GpuCompositor.cpp.obj	c7d51f316e43337e
+44	9207	8131507694458474	CMakeFiles/KomparatorGpuExporter.dir/native/KomparatorGpuExporter/NvencDirectEncoder.cpp.obj	2dde376632c0ca36
+35	9353	8131507694378471	CMakeFiles/KomparatorGpuExporter.dir/native/KomparatorGpuExporter/TelemetryRenderer.cpp.obj	d14a96ca3ff203ab
+24	7087	8131583320629350	CMakeFiles/KomparatorGpuExporter.dir/native/KomparatorGpuExporter/main.cpp.obj	42f7aacf20f06628
+29	4934	8131583320679351	CMakeFiles/KomparatorGpuExporter.dir/native/KomparatorGpuExporter/Config.cpp.obj	3ba38f0cab749181
+49	8889	8131507694510126	CMakeFiles/KomparatorGpuExporter.dir/native/KomparatorGpuExporter/AudioMuxer.cpp.obj	469cd54137a51534
+22	5198	8131507694238389	CMakeFiles/KomparatorGpuExporter.dir/native/KomparatorGpuExporter/D3D11Context.cpp.obj	afafc053d360cab4
