@@ -1,0 +1,42 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# PyInstaller
+build/
+dist/
+*.spec
+
+# Wideo
+*.mp4
+*.mov
+*.avi
+*.mkv
+
+# Komparator tymczasowe pliki
+_ass_temp_komp/
+
+# Środowisko wirtualne
+venv/
+env/
+.venv/
+
+# IDE
+.vscode/
+.idea/
+
+# Native build artifacts
+bin/
+*.obj
+
+# Local verification output (clips, logs, compact telemetry snapshots)
+tests/artifacts/
+
+dist/
+build/
+__pycache__/
+*.cer
+*.msix
+*.exe
+runtime/
