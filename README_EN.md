@@ -32,7 +32,7 @@ If PowerShell blocks environment activation, skip it and invoke `.venv\Scripts\p
 
 ## Build the native D3D11 exporter
 
-The exporter requires the Windows SDK, CMake, a C++17 compiler (Visual Studio C++ Build Tools or GCC/MinGW), Ninja when using GCC, and a shared FFmpeg development package. FFmpeg must provide `include`, `lib`, and optionally `bin` with runtime DLLs compatible with its headers.
+The exporter requires the Windows SDK, CMake, a C++17 compiler (Visual Studio C++ Build Tools or GCC/MinGW), Ninja when using GCC, and a shared FFmpeg development package. FFmpeg must provide `include`, `lib`, and `bin` with runtime DLLs compatible with its headers. The build was verified with FFmpeg 9.0.1 (`libavcodec` 63); get a compatible `full shared` package from the [Windows builds linked by FFmpeg](https://www.gyan.dev/ffmpeg/builds/).
 
 Ready-made FFmpeg libraries and local runtime files are not committed. Download a shared FFmpeg development package for Windows and set `FFMPEG_DIR` to its root directory. Alternatively, place it in `third_party/ffmpeg` (that local directory is ignored by Git).
 

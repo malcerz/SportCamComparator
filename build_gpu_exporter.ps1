@@ -46,6 +46,7 @@ if (-not $VcVars -and (Test-Path $KnownVcVars)) { $VcVars = $KnownVcVars }
 
 $UseMsvc = [bool]$VcVars
 $GccExe = (Get-Command g++.exe -ErrorAction SilentlyContinue).Source
+$GccBin = if ($GccExe) { Split-Path -Parent $GccExe } else { $null }
 if (-not $UseMsvc -and -not $GccExe) {
     throw "Neither Visual Studio C++ Build Tools nor g++.exe was found."
 }
@@ -95,10 +96,10 @@ if errorlevel 1 exit /b 1
     if ($LASTEXITCODE -ne 0) { throw "CMake build failed" }
 
     # Copy UCRT64 runtime DLLs to bin
-    if (Test-Path $ToolchainBin) {
-        Copy-Item (Join-Path $ToolchainBin "libstdc++-6.dll") (Join-Path $ScriptDir "bin") -Force -ErrorAction SilentlyContinue
-        Copy-Item (Join-Path $ToolchainBin "libgcc_s_seh-1.dll") (Join-Path $ScriptDir "bin") -Force -ErrorAction SilentlyContinue
-        Copy-Item (Join-Path $ToolchainBin "libwinpthread-1.dll") (Join-Path $ScriptDir "bin") -Force -ErrorAction SilentlyContinue
+    if ($GccBin) {
+        Copy-Item (Join-Path $GccBin "libstdc++-6.dll") (Join-Path $ScriptDir "bin") -Force -ErrorAction SilentlyContinue
+        Copy-Item (Join-Path $GccBin "libgcc_s_seh-1.dll") (Join-Path $ScriptDir "bin") -Force -ErrorAction SilentlyContinue
+        Copy-Item (Join-Path $GccBin "libwinpthread-1.dll") (Join-Path $ScriptDir "bin") -Force -ErrorAction SilentlyContinue
     }
 }
 
