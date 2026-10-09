@@ -2,10 +2,7 @@
 param(
     [switch]$SkipBuild,
     [ValidateSet("Dev", "Store")]
-    [string]$Configuration = "Dev",
-    [string]$StoreIdentityName,
-    [string]$StorePublisher,
-    [string]$StorePublisherDisplayName
+    [string]$Configuration = "Dev"
 )
 
 $ErrorActionPreference = "Stop"
@@ -17,12 +14,6 @@ Set-Location $ProjectRoot
 Write-Host "==================================================" -ForegroundColor Cyan
 Write-Host " SportCamComparator - MSIX Package Builder ($Configuration)" -ForegroundColor Cyan
 Write-Host "==================================================" -ForegroundColor Cyan
-
-if ($Configuration -eq "Store") {
-    if (-not $StoreIdentityName -or -not $StorePublisher -or -not $StorePublisherDisplayName) {
-        throw "For Store configuration, you must provide -StoreIdentityName, -StorePublisher, and -StorePublisherDisplayName"
-    }
-}
 
 # 1. Sprawdzić narzędzia
 if (-not (Get-Command "makeappx.exe" -ErrorAction SilentlyContinue)) { throw "makeappx.exe not found" }
@@ -71,15 +62,6 @@ Copy-Item -Path "$DistDir\*" -Destination $MsixLayout -Recurse -Force
 Copy-Item -Path "packaging\windows\msix\AppxManifest.xml" -Destination $MsixLayout -Force
 Copy-Item -Path "packaging\windows\msix\Assets" -Destination $MsixLayout -Recurse -Force
 
-if ($Configuration -eq "Store") {
-    $ManifestPath = "$MsixLayout\AppxManifest.xml"
-    $ManifestContent = Get-Content $ManifestPath -Raw
-    $ManifestContent = $ManifestContent -replace 'Name="SportCamComparator.Test"', "Name=`"$StoreIdentityName`""
-    $ManifestContent = $ManifestContent -replace 'Publisher="CN=Malcerz"', "Publisher=`"$StorePublisher`""
-    $ManifestContent = $ManifestContent -replace '<PublisherDisplayName>Malcerz</PublisherDisplayName>', "<PublisherDisplayName>$StorePublisherDisplayName</PublisherDisplayName>"
-    Set-Content -Path $ManifestPath -Value $ManifestContent -Encoding UTF8
-}
-
 # 8. Utworzyć pakiet MSIX
 $Version = "1.0.0.0"
 $MsixSuffix = if ($Configuration -eq "Store") { "_Store" } else { "_Dev" }
@@ -94,8 +76,13 @@ if ($LASTEXITCODE -ne 0) { throw "MakeAppx failed" }
 # 9. Podpisywanie
 if ($Configuration -eq "Dev") {
     Write-Host "Signing MSIX package with dev cert..."
-    $CertThumbprint = "BE7EB1E859099EFC95A0B77885242E954E978F36"
-    & signtool.exe sign /sha1 $CertThumbprint /fd SHA256 /a $MsixFile
+    $Publisher = "CN=E2A524DB-9E81-4D08-A86B-40EA6B42DED4"
+    $Cert = Get-ChildItem Cert:\CurrentUser\My | Where-Object { $_.Subject -eq $Publisher } | Select-Object -First 1
+    if (-not $Cert) {
+        Write-Host "Generating Dev Certificate..."
+        $Cert = New-SelfSignedCertificate -Type Custom -Subject $Publisher -KeyUsage DigitalSignature -FriendlyName "SportCamComparator Dev" -CertStoreLocation "Cert:\CurrentUser\My" -TextExtension @("2.5.29.37={text}1.3.6.1.5.5.7.3.3", "2.5.29.19={text}")
+    }
+    & signtool.exe sign /sha1 $($Cert.Thumbprint) /fd SHA256 /a $MsixFile
     if ($LASTEXITCODE -ne 0) { throw "SignTool failed" }
 } else {
     Write-Host "Skipping local signing for Store configuration."

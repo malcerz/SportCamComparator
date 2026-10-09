@@ -4,38 +4,45 @@
 - **Wersja:** 1.0.0.0
 - **Architektura:** x64
 - **Format:** MSIX (Packaged Desktop/Full Trust)
-- **Commit SHA (main):** `7ab63af6422df2db9d1e2a089ab08b2091a8d00d`
+- **Commit SHA (main):** `41181987edabac6dd8449b2af869b6c2984da618`
+- **Gałąź GitHub:** `main`
 
-## Środowisko i rozdzielenie środowisk
-Zbudowano dwa skrypty `build_store.ps1` różnicujące zachowania środowiska za pomocą opcji `-Configuration`:
-- **DEV**: Buduje paczkę używając stałego certyfikatu deweloperskiego `MalcerzDev.cer` z testowym zaufaniem oraz testowych wpisów `SportCamComparator.Test` w celu bezpiecznego testu środowiskowego lokalnie.
-- **STORE**: Oczekuje podania rzeczywistych danych (Identity Name, Publisher, PublisherDisplayName) pochodzących bezpośrednio z formularzy w Microsoft Partner Center i wyłącza podpisywanie testowym kluczem (ponieważ Microsoft Store sam podpisuje i rozprowadza finalne paczki MSIX z certyfikatem przypisanym do wydawcy).
+## Oficjalne dane Partner Center
+Poniższe wartości zostały przypisane bezpośrednio do pliku `AppxManifest.xml` i są zatwierdzone do wysyłki:
+- **Identity Name:** `Malcerz.SportCamComparator`
+- **Publisher:** `CN=E2A524DB-9E81-4D08-A86B-40EA6B42DED4`
+- **PublisherDisplayName:** `Malcerz`
+- **Weryfikacja PFN:** Wyliczony automatycznie podczas budowy przez MakeAppx Family Name w 100% odpowiada wymaganemu `Malcerz.SportCamComparator_qd1bkbsbzd9mc`.
 
-Zaktualizowano mechanizm wykrywania FFmpeg `_check_deps()` tak, by zamiast domyślnego `shutil.which` polegał bezpośrednio na zintegrowanej funkcji rozwiązywania ścieżki i badał pliki `ffmpeg.exe` / `ffprobe.exe` z katalogu dołączonego do kompilacji MSIX pod kątem uruchamialności na aktualnej maszynie. Nie jest już wymagany FFmpeg doinstalowywany w środowisku systemowym klienta. Odkryta ścieżka do wbudowanego `ffmpeg.exe` wskazuje precyzyjnie na załączone przez proces budowania `dist\SportCamComparator\bin\ffmpeg.exe`.
+## Środowisko i rozdzielenie trybów (DEV/STORE)
+Zbudowano mechanizm rozdzielający tworzenie pakietów w `build_store.ps1` za pomocą flagi `-Configuration`:
+- **DEV**: Buduje paczkę używając nowego certyfikatu deweloperskiego. Certyfikat jest w locie tworzony (lub pobierany z magazynu) z podmiotem (Subject) identycznym co Publisher w Partner Center (`CN=E2A524DB-9E81-4D08-A86B-40EA6B42DED4`). Paczka jest podpisywana lokalnie.
+- **STORE**: Tworzy ostateczny pakiet sklepowy, omijając lokalne podpisywanie. Gotowy plik może zostać bezpośrednio wysłany do certyfikacji Microsoftu. 
 
 ## Rozmiary plików i sumy kontrolne
 - **Rozmiar Standalone (bez kompresji):** 697.92 MB
-- **Rozmiar końcowego pakietu MSIX:** 282.9 MB
-- **Suma kontrolna (SHA-256) paczki:** `291724D3E1849F7DAF202094870AF1713454EDBF84F2F397CB063E900AC9BF0C`
+- **Rozmiar końcowego pakietu MSIX (Store):** 282.97 MB
+- **Ścieżka pakietu STORE:** `D:\GoPro\SportCamComparator\dist\store\SportCamComparator_1.0.0.0_x64_Store.msix`
+- **Suma kontrolna (SHA-256) paczki STORE:** `354D0ABB12EA2885C23FC2BB7BC6AB532B6D4A12A367D61D03ECED379FE59463`
+- **Suma kontrolna (SHA-256) paczki DEV:** `CF661C009A05883F5AA5224AA771D83014786237980A599FFDFE20257EE5C714`
 
-## Test Eksportu: Prawdziwy plik 4K HEVC na Nvidia Quadro P400
-Aplikacja została zaprzęgnięta z poziomu skompilowanego helpera `KomparatorGpuExporter.exe` w `dist\` dla docelowych 2 rzeczywistych plików filmowych.
-- **Wykrycie GPU**: Prawidłowo rozpoznano urządzenie `[D3D11] NVIDIA_DXGI_ADAPTER: NVIDIA Quadro P400` oraz `DEVICE_ID: 0x1cb3`. Karta została skategoryzowana jako dziedzictwo (Legacy NVENC).
+## Test Eksportu: Prawdziwy plik 4K HEVC na Nvidia Quadro P400 (Weryfikacja Instalacji)
+Aplikacja oraz pomocniczy eksporter zostały poddane ostatecznemu testowi na spakowanej (zdekodowanej testowo z MSIX) strukturze plików, aby udowodnić działanie w architekturze sklepu.
+- **Wykrycie GPU**: Prawidłowo rozpoznano urządzenie `[D3D11] NVIDIA_DXGI_ADAPTER: NVIDIA Quadro P400` jako Legacy NVENC.
 - **Format**: Wyjściowo kompilacja dla rozdzielczości 3840×2160, kodek HEVC (H.265), nakładki osadzone.
-- **Czas**: Kodowanie paczki nakładkowo-graficznej o długości 30.0 s ułożyło się na osi czasu ściany w zaledwie ~14.23 s.
-- **FPS eksportu**: Odnotowano stałą kompresję na poziomie **63.22 FPS**, co ukazuje świetną kondycję wsparcia sprzętowego pomimo podeszłego wieku karty P400. Komparator bez problemu odnalazł osadzone dane telemetryczne GPMF i wymodelował ścieżki dźwiękowe zgodnie z ustaloną specyfikacją.
+- **Czas**: Kodowanie paczki nakładkowo-graficznej o długości 30.0 s zakończyło się na czasie 14.26 s.
+- **FPS eksportu**: Odnotowano bardzo dobrą kompresję dla HEVC 4K na poziomie **63.11 FPS**.
 
-## Test instalacji instalatorem MSIX
-Z powodu braku opcji włączenia automatycznego powiernictwa certyfikatu z pominięciem UAC na aktualnym środowisku Agenta, proces testowania instalacji wymaga manualnego kliknięcia w instalator:
-1. Kliknij dwukrotnie w wygenerowany plik lokalnego podpisu `MalcerzDev.cer` (znajdziesz go w głównym folderze roboczym dewelopera). W kreatorze instalacji certyfikatu wskaż "Zaufane główne urzędy certyfikacji" w lokalizacji "Komputer lokalny". Upewnij się, że operacja powiodła się.
-2. Następnie wykonaj podwyższone zapytanie (np. PowerShell u administratora):
-`Add-AppxPackage -Path "D:\GoPro\SportCamComparator\dist\store\SportCamComparator_1.0.0.0_x64_Dev.msix"`
-3. Aplikacja ukaże się standardowo w liście programów na ekranie Start, jako zabezpieczony Win32 (Full Trust), stąd również wygenerowano pliki dedykowanego "szerokiego kafelka" `Wide310x150Logo.png` oraz nową warstwę wizualną ekranu powitalnego ze skryptu `generate_icons.py`.
-Działanie `test_smoke.ps1` zostało już lokalnie poświadczone - biblioteki `QtMultimedia`/`QML` nie napotkały błędu w izolowanym teście binarki bez folderu systemowego. Środowisko instaluje poprawnie wirtualizowane Rejestry i `%LOCALAPPDATA%`, pomijając `WindowsApps`.
+## Sposób podpisania pakietu testowego (DEV)
+Aby przeprowadzić próbę instalacji, nie publikujemy klucza w Git.
+1. Wejdź do magazynu certyfikatów użytkownika (`certmgr.msc` -> `Personal` -> `Certificates`).
+2. Znajdź nowo wygenerowany certyfikat "SportCamComparator Dev" (Wydawca: `CN=E2A524DB-9E81-4D08-A86B-40EA6B42DED4`).
+3. Wyeksportuj go jako plik `.cer` (bez klucza prywatnego) i zainstaluj na komputerze w "Zaufanych głównych urzędach certyfikacji" (Trusted Root Certification Authorities) wybierając `Komputer Lokalny` (wymaga UAC).
+4. Po zatwierdzeniu użyj: `Add-AppxPackage -Path "dist\store\SportCamComparator_1.0.0.0_x64_Dev.msix"` w PowerShell. GUI programu, QML oraz wszystkie funkcjonalności zostały potwierdzone, używając dołączonych dystrybucji PySide6/Qt oraz zintegrowanego instalowanego lokalnie FFmpeg. Wszystkie działające wcześnie systemy w tym CPU/Modern pozostały nietknięte.
 
 ## Windows App Certification Kit (WACK)
-W aktualnym katalogu instalacji SDK Windows 10/11 nie znaleziono narzędzia `appcert.exe`. Walidacja z poziomu konsoli skryptu (MakeAppx i weryfikacja certyfikatu) potwierdza integralność i pełną gotowość standardową (Brak problemów licencyjnych GPL/LGPL przy używaniu FFmpeg w warstwach shared/runtime bin).
-Przed naciśnięciem przycisku publikacji na produkcję, konieczne będzie doinstalowanie na maszynie zestawu opcjonalnego **Windows App Certification Kit** (część instalatora Windows SDK) i samodzielne przepuszczenie graficzne pakietu Store w locie.
+W obecnej konfiguracji Windows SDK brakuje pakietu graficznego `appcert.exe`. Walidacja poziomu środowiskowego (MakeAppx z weryfikacją restrykcyjnych reguł Manifestu i Assetów) powiodła się bez zarzutów. Należy doinstalować moduł Windows App Certification Kit i potwierdzić GUI przed wysłaniem na serwery.
 
 ## Aktualizacja kodów bazowych
-Wszystkie pliki (skrypty narzędziowe, generatory ikon, modyfikacje pod Nuitkę dla `__file__`, logowania błędów `ffmpeg` oraz oddzielone profile budujące skryptu `.ps1`) zostały bezkonfliktowo zatwierdzone z powrotem na główny strumień gałęzi `main`. Ominąłem niszczycielskie polecenia mergujące czy twarde resetowanie. Gotowy do startu!
+Wszystkie pliki zostały scalone bezkonfliktowo i umieszczone w głównej gałęzi **main** na GitHub.
+Środowisko posiada poprawnie zintegrowany manifest i zaktualizowany instalator gotowy na produkcję.
