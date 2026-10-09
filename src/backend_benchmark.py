@@ -17,7 +17,7 @@ class BackendSelector:
         """Return writable cache path — works in dev, Nuitka standalone, and MSIX install.
 
         MSIX install directory is READ-ONLY. QStandardPaths.AppLocalDataLocation
-        resolves to %LOCALAPPDATA%\Comparator which is always writable.
+        resolves to %LOCALAPPDATA%\\Comparator which is always writable.
         Falls back to build/ in source mode if Qt is not available.
         """
         try:
