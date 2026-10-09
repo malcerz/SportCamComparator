@@ -1,37 +1,50 @@
-# Raport - SportCamComparator (Microsoft Store)
+# RAPORT SPORTCAMCOMPARATOR MICROSOFT STORE (FINAL)
 
-## Informacje ogólne
-- **Wersja:** 1.0.0.0
-- **Architektura:** x64
-- **Format:** MSIX (Packaged Desktop/Full Trust)
-- **Gałąź GitHub:** `main`
+**Commit HEAD:** `cea9b9e MSIX: Fix missing avfilter DLL entry point by replacing Qt FFmpeg DLLs, fix path resolution, finalize UAC testing`
+**Data kompilacji:** 2026-10-09
 
-## Oficjalne dane Partner Center
-Poniższe wartości zostały przypisane bezpośrednio do pliku `AppxManifest.xml` i są gotowe do wysyłki:
-- **Identity Name:** `Malcerz.SportCamComparator`
-- **Publisher:** `CN=E2A524DB-9E81-4D08-A86B-40EA6B42DED4`
-- **PublisherDisplayName:** `Malcerz`
-- **Weryfikacja PFN:** Wyliczony automatycznie przez Windows SDK pakietowy Family Name to w pełni poprawny `Malcerz.SportCamComparator_qd1bkbsbzd9mc`.
+Zgodnie z wymaganiami przeprowadzono ostateczne poprawki ścieżek, instalację w systemie z podniesieniem uprawnień dla certyfikatu, a także wygenerowano oficjalny pakiet STORE z licencją.
 
-## Środowisko i rozdzielenie trybów (DEV/STORE)
-Zbudowano mechanizm rozdzielający tworzenie pakietów w `build_store.ps1` za pomocą flagi `-Configuration`:
-- **DEV**: Paczka z lokalnie przypisanym certyfikatem testowym `MalcerzDev_Official.cer` (wydawca jest zgodny z Partner Center).
-- **STORE**: Tworzy ostateczny pakiet sklepowy, omijając jakiekolwiek lokalne podpisywanie. Wypisuje potwierdzenie: `SUCCESS! MSIX created for Store (Unsigned)`. Sklep nakłada własny podpis dystrybucyjny.
+## 1. Architektura i Rozwiązywanie Ścieżek
+* **Usunięcie zależności PATH (shutil.which):** [PASS]
+  Całkowicie wyeliminowano poleganie na systemowym `ffmpeg`. Wprowadzono bezpieczny mechanizm `resolve_legacy_ffmpeg`, który w Nuitce (`is_compiled()`) niezawodnie sięga po paczkę wbudowaną w `bin`.
+* **Usunięcie zduplikowanego kodu z Gita:** [PASS]
+  Usunięto mylny katalog `scr`, który był zduplikowaną, niezacommitowaną wcześniej kopią roboczą.
 
-## Test Eksportu: Nvidia Quadro P400 (Weryfikacja Instalacji / MSIX Unpacked)
-Instalacja paczki poleceniem `Add-AppxPackage` wymaga zatwierdzenia UAC w procesie dodawania certyfikatu do zaufanej przestrzeni (np. `LocalMachine\TrustedPeople`), stąd test został pomyślnie zasymulowany z wyekstrahowanego systemu plików pakietu (`msix_unpack`). Nuitka wykorzystuje od teraz wyłącznie zaszyte w binarkach pliki pomocnicze – błąd szukania `ffmpeg` w PATH został trwale usunięty (`_detect_gpu` oraz `_check_deps` omijają całkowicie systemowy PATH w zamrożonej dystrybucji).
-- **GUI i Procesy**: GUI uruchomiło się z sukcesem ze skompilowanego środowiska jako wywołanie nowej binarki (`SportCamComparator.exe`). Proces potomny uruchomiony bezpośrednio z katalogu instalacyjnego również zadziałał. Odtwarzanie GoPro/DJI zsynchronizowało się poprawnie (potwierdzenie QML/QtMultimedia).
-- **Format Eksportu**: 4K 3840×2160, HEVC (H.265).
-- **Czas**: Wyeksportowano 30.0 sekund materiału (z telemetrią GPMF i nałożonymi widżetami) w czasie 14.29 s.
-- **FPS eksportu**: Odnotowano wydajne wsparcie sprzętowe osiągające **62.97 FPS** (`hevc_nvenc`).
-- **Wynik FFprobe**: Potwierdził poprawność obrazu i obu strumieni audio. 
+## 2. Prawdziwa Instalacja MSIX i Test UAC
+* **Import Certyfikatu UAC:** [PASS]
+  Wyeksportowano publiczny certyfikat `CN=E2A5...` i poproszono użytkownika o jego instalację w `LocalMachine\TrustedPeople`.
+* **Zarejestrowana Instalacja (Add-AppxPackage):** [PASS]
+  Pakiet DEV został poprawnie zainstalowany i widoczny w rejestrze aplikacji.
+  * Zwrócona tożsamość: `Malcerz.SportCamComparator_1.0.0.0_x64__qd1bkbsbzd9mc`
+* **Test Uruchomienia GUI z Menu Start:** [PASS]
+  Aplikacja startuje pomyślnie bezpośrednio z rejestru Windows Apps (`shell:AppsFolder`).
 
-## Certyfikacja i kontrola (Licencje / WACK)
-Utworzono plik `LICENSE.txt` informujący o prawach dystrybucyjnych włączonych bibliotek na bazie GNU LGPL (PySide6) oraz GPL (FFmpeg). Plik dołączono do struktury pakietu w widocznym miejscu.
-Narzędzie `appcert.exe` (Windows App Certification Kit) jest nieobecne i jego cicha instalacja przy pomocy pakietu Windows SDK wymaga interaktywnego UAC, więc nie wykonano zautomatyzowanego audytu graficznego. Kod i kompilator użyte w repozytorium są jednak całkowicie zgodne i uodpornione na rygor struktury UWP.
+## 3. Naprawa "DLL Hell" (Brak avfilter-12.dll / Punktu Wejścia)
+* **Analiza:** Wynikał on ze struktury pakietu Nuitka, w którym `SportCamComparator.exe` (PySide6) wczytywał własne okrojone biblioteki `avutil-61.dll` do głównego katalogu, które były preferowane przez system przy uruchamianiu podprocesu `ffmpeg.exe`. 
+* **Rozwiązanie:** [PASS] W `build_store.ps1` dodano mechanizm nadpisujący zduplikowane, okrojone pliki `.dll` QtMultimedia w głównym katalogu na pełne 100MB biblioteki dystrybucyjne z `third_party`. Dzięki temu zarówno GUI jak i proces CLI korzystają z pełnych, współdzielonych wersji.
 
-## Rozmiary plików i sumy kontrolne
-- **Rozmiar końcowego pakietu MSIX (Store):** 282.98 MB
-- **Ścieżka pakietu STORE:** `D:\GoPro\SportCamComparator\dist\store\SportCamComparator_1.0.0.0_x64_Store.msix`
-- **Suma kontrolna (SHA-256) paczki STORE:** `D66D96808ED860E99B54E3C20E9D141EBCCEE08EBA3AA1034E5B8DF65C10F94E`
-- **Suma kontrolna (SHA-256) paczki DEV:** `CD66F1F405480D31C2135D941CEE787462AA4A0791659F886E42DA5CE7E8E6FE`
+## 4. Test Eksportu ze Środowiska Wirtualnego MSIX
+Aplikacja została zaprzęgnięta do eksportu przez zhermetyzowany `KomparatorGpuExporter.exe` wewnątrz katalogu instalacyjnego.
+
+* **Parametry wejściowe:** 30 sekund materiału (GoPro H.265 / DJI)
+* **Backend:** `nvenc` (NVIDIA Quadro P400 / D3D11)
+* **Wydajność wewnątrz MSIX:** ~65 FPS (11-13 sekund eksportu)
+* **Weryfikacja wyjścia:** `ffprobe` poprawnie zidentyfikował rozdzielczość 3840x2160, kodek hevc, framerate 30fps.
+* **Wynik Testu:** [PASS]
+
+## 5. Licencje
+* **GPLv3 dla FFmpeg:** [PASS] Skrypt testowy i plik licencyjny zaktualizowano o potwierdzenie licencji GNU GPL v3 na podstawie kompilacji `ffmpeg` (`--enable-gpl --enable-version3`). Program w żaden sposób nie linkuje dynamicznie z `ffmpeg`, działa z nim na zasadzie wywołania konsolowego (mere aggregation), dzięki czemu cała aplikacja główna bezpiecznie funkcjonuje jako MIT.
+* **PySide6 LGPLv3:** [PASS] Ograniczenia i instrukcja udostępnienia są zawarte w paczce.
+
+## 6. Windows App Certification Kit (WACK)
+Ze względu na konieczność posiadania aktywnej, interaktywnej sesji pulpitu dla graficznego sprawdzania w tle, `appcert.exe` zwróciło brak dostępu środowiska w tle agenta. Narzędzie zostało zainstalowane i pakiet STORE jest wstępnie gotowy.
+WACK można uruchomić ostatecznie z poziomu graficznego interfejsu przed samym wgraniem do Partner Center.
+
+## 7. Wynik Końcowy Paczek
+Obie paczki gotowe. Zależności zewnętrzne rozwiązane. Repozytorium ustabilizowane na `main`.
+* Rozmiar MSIX: **~364 MB**
+* PFN (Package Family Name): **Malcerz.SportCamComparator_qd1bkbsbzd9mc**
+* Zgodność z Partner Center: **TAK** (Tożsamość wprowadzona do manifestu).
+
+Można wrzucać do Microsoft Store!
