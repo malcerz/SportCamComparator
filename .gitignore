@@ -1,0 +1,81 @@
+# Python bytecode and test caches
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Local environments and editor state
+.venv/
+venv/
+env/
+.idea/
+.vscode/
+*.user
+*.suo
+*.swp
+
+# Build and packaging output
+/build/
+/dist/
+/bin/
+scr/build/
+scr/dist/
+*.obj
+*.o
+*.pdb
+*.ilk
+*.exp
+*.idb
+*.pyz
+*.pkg
+
+# Local runtime and downloaded native dependencies
+/runtime/
+/third_party/ffmpeg/
+*.dll
+*.exe
+*.lib
+*.a
+
+# Video and generated media files
+*.mp4
+*.MP4
+*.mov
+*.MOV
+*.avi
+*.AVI
+*.mkv
+*.MKV
+*.webm
+*.WEBM
+*.m4v
+*.M4V
+*.wav
+*.WAV
+*.flac
+*.FLAC
+
+# Generated logs, archives, and scratch files
+*.log
+*.tmp
+*.temp
+*.bak
+*.old
+*.zip
+*.7z
+*.rar
+*.part
+*.crdownload
+_ass_temp_komp/
+tests/artifacts/
+
+# Local credentials and machine-specific configuration
+.env
+.env.*
+!.env.example
+secrets.*
+local_settings.py

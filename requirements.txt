@@ -1,0 +1,4 @@
+PySide6>=6.5.0
+ffprobe-python>=1.0.3
+numpy>=1.23
+pytest>=7.0
