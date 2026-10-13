@@ -17,6 +17,7 @@ if (-not (Get-Command "python" -ErrorAction SilentlyContinue)) {
 Write-Host "Executing Nuitka build..."
 python -m nuitka `
     --standalone `
+    --windows-console-mode=disable `
     --enable-plugin=pyside6 `
     --include-qt-plugins=qml,multimedia `
     --include-data-dir="src=src" `

@@ -10,6 +10,22 @@ import tempfile
 import time
 from pathlib import Path
 
+if sys.platform == "win32":
+    # Prevent child processes from creating or showing console/CMD windows
+    _orig_popen_init = subprocess.Popen.__init__
+    def _no_window_popen_init(self, *args, **kwargs):
+        flags = kwargs.get("creationflags", 0)
+        kwargs["creationflags"] = flags | subprocess.CREATE_NO_WINDOW
+        _orig_popen_init(self, *args, **kwargs)
+    subprocess.Popen.__init__ = _no_window_popen_init
+
+if sys.stdout is None:
+    import io
+    sys.stdout = io.StringIO()
+if sys.stderr is None:
+    import io
+    sys.stderr = io.StringIO()
+
 # ---------------------------------------------------------------------------
 # Argument --hwaccel <cpu|nvidia|intel|amd> jest przekazywany przy restarcie
 # przez _on_encoder_changed() i musi byc odczytany PRZED pierwszym importem
@@ -723,6 +739,9 @@ class MainWindow(QMainWindow):
         self._last_gpu_metrics = None
         self._last_gpu_error = ""
         self._ffmpeg_log_path = None
+        self._last_export_frame = 0
+        self._last_export_fps = 0.0
+        self._export_stats_history = self._load_export_stats_history()
 
         # Audio starts muted – jawnie wołamy, bo setCurrentIndex(0) nie emituje sygnału
         self._set_audio_mode(0)
@@ -1594,6 +1613,57 @@ class MainWindow(QMainWindow):
             btn.setEnabled(enabled)
 
     # ------------------------------------------------------------------
+    # Export Statistics & History
+    # ------------------------------------------------------------------
+    def _load_export_stats_history(self) -> dict:
+        settings = QSettings("Comparator", "Comparator")
+        raw = settings.value("export_stats_history", "{}")
+        try:
+            if isinstance(raw, str):
+                return json.loads(raw)
+            elif isinstance(raw, dict):
+                return raw
+        except Exception:
+            pass
+        return {}
+
+    def _save_export_stat(self, device_key: str, device_label: str, codec: str, backend_info: str, fps: float, duration: float, frames: int) -> dict:
+        stats = self._load_export_stats_history()
+        composite_key = f"{device_key}_{codec}"
+        stats[composite_key] = {
+            "device_key": device_key,
+            "device_label": device_label,
+            "codec": codec,
+            "backend": backend_info,
+            "fps": round(fps, 1),
+            "duration": round(duration, 2),
+            "frames": int(frames),
+            "timestamp": time.time(),
+        }
+        try:
+            settings = QSettings("Comparator", "Comparator")
+            settings.setValue("export_stats_history", json.dumps(stats, ensure_ascii=False))
+        except Exception:
+            pass
+        self._export_stats_history = stats
+        return stats
+
+    def _format_export_stats_summary(self, stats: dict) -> str:
+        order = {"nVidia": 1, "AMD": 2, "Intel": 3, "CPU": 4}
+        sorted_entries = sorted(
+            stats.values(),
+            key=lambda x: (order.get(x.get("device_key", ""), 99), x.get("codec", ""))
+        )
+        lines = []
+        for entry in sorted_entries:
+            dev = entry.get("device_label", entry.get("device_key", ""))
+            c = entry.get("codec", "HEVC")
+            f = entry.get("fps", 0.0)
+            d = entry.get("duration", 0.0)
+            lines.append(f"  • {dev} | {c}: {f:.1f} fps | Czas: {d:.2f}s")
+        return "\n".join(lines) if lines else "  (brak danych)"
+
+    # ------------------------------------------------------------------
     # Export
     # ------------------------------------------------------------------
     def _cancel_export(self):
@@ -1663,6 +1733,8 @@ class MainWindow(QMainWindow):
         self._cancel_requested = False
         self._last_gpu_metrics = None
         self._last_gpu_error = ''
+        self._last_export_frame = 0
+        self._last_export_fps = 0.0
         self._ffmpeg_log_path = None
         self._export_log = ''
         self._export_pending = ''
@@ -1807,6 +1879,8 @@ class MainWindow(QMainWindow):
                         pct = int(msg.get("percent", 0))
                         frame = msg.get("frame", 0)
                         fps = msg.get("fps", 0.0)
+                        self._last_export_frame = frame
+                        self._last_export_fps = fps
                         eta = msg.get("eta", 0.0)
                         eta_m = int(eta) // 60
                         eta_s = int(eta) % 60
@@ -1823,11 +1897,22 @@ class MainWindow(QMainWindow):
                         self._last_gpu_error += json.dumps(msg, ensure_ascii=False) + "\n"
                 except Exception:
                     pass
-            elif self._active_backend == "legacy" and line.startswith("frame="):
+            elif self._active_backend == "legacy" and ("frame=" in line or line.startswith("frame=")):
                 m_frame = re.search(r"frame=\s*(\d+)", line)
                 m_fps = re.search(r"fps=\s*([\d.]+)", line)
                 m_time = re.search(r"time=(\d+):(\d+):(\d+)\.(\d+)", line)
                 m_speed = re.search(r"speed=\s*([\d.]+)x", line)
+
+                if m_frame:
+                    try:
+                        self._last_export_frame = int(m_frame.group(1))
+                    except ValueError:
+                        pass
+                if m_fps:
+                    try:
+                        self._last_export_fps = float(m_fps.group(1))
+                    except ValueError:
+                        pass
 
                 pct = 0
                 sec = 0.0
@@ -1947,23 +2032,110 @@ class MainWindow(QMainWindow):
         elif (exit_code == 0 and exit_status == QProcess.NormalExit and not self._process_error
               and not self._last_gpu_error and (self._active_backend != 'd3d11' or
               (self._last_gpu_metrics and self._last_gpu_metrics.get('status') == 'success'))):
+            hw = self.encoder_combo.currentText()
+            hw_upper = hw.upper()
+            if "NVIDIA" in hw_upper:
+                device_label = "nV (NVIDIA)"
+                device_key = "nVidia"
+            elif "AMD" in hw_upper:
+                device_label = "AMD"
+                device_key = "AMD"
+            elif "INTEL" in hw_upper:
+                device_label = "Intel"
+                device_key = "Intel"
+            else:
+                device_label = "CPU"
+                device_key = "CPU"
+
+            codec = "HEVC"
+
+            if self._active_backend == "d3d11":
+                backend_detail = f"D3D11 Zero-Copy ({hw})"
+            elif getattr(self, "_backend_selected", "") == "NVIDIA_MODERN_FFMPEG":
+                backend_detail = "NVIDIA Modern FFmpeg"
+            else:
+                backend_detail = f"Legacy FFmpeg ({getattr(self, '_backend_selected', hw)})"
+
+            elapsed_sec = max(0.001, time.perf_counter() - self._export_started_at) if self._export_started_at else 0.0
+
             if self._active_backend == "d3d11" and self._last_gpu_metrics:
                 m = self._last_gpu_metrics
-                msg = I18n.tr(
-                    "export_ready_gpu",
-                    path=self._export_out_path,
-                    frames=m.get("total_frames", 0),
-                    fps=m.get("avg_fps", 0.0),
-                    dur=m.get("duration", 0.0),
-                    hwdown=m.get("full_frame_hwdownload_count", 0),
-                    hwup=m.get("full_frame_hwupload_count", 0),
-                    sw=m.get("software_frame_count", 0),
-                    tel_count=m.get("telemetry_texture_uploads", 0),
-                    tel_kb=m.get("telemetry_uploaded_bytes", 0) // 1024,
-                )
-                QMessageBox.information(self, I18n.tr("btn_export"), msg)
+                total_frames = int(m.get("total_frames", getattr(self, "_last_export_frame", 0)))
+                avg_fps = float(m.get("avg_fps", getattr(self, "_last_export_fps", 0.0)))
+                elapsed_sec = float(m.get("duration", elapsed_sec))
             else:
-                QMessageBox.information(self, I18n.tr("btn_export"), I18n.tr("export_ready", path=self._export_out_path))
+                total_frames = getattr(self, "_last_export_frame", 0)
+                if total_frames > 0 and elapsed_sec > 0:
+                    avg_fps = total_frames / elapsed_sec
+                else:
+                    avg_fps = getattr(self, "_last_export_fps", 0.0)
+
+            # Probe resulting MP4 if frames or fps need verification
+            if (total_frames <= 0 or avg_fps <= 0.0) and Path(self._export_out_path).is_file():
+                try:
+                    from video_encoder import resolve_legacy_ffprobe
+                    ffprobe_exe = resolve_legacy_ffprobe(hw)
+                    probe_cmd = [
+                        ffprobe_exe, "-v", "error",
+                        "-show_entries", "stream=nb_frames,codec_name:format=duration",
+                        "-of", "json", str(self._export_out_path)
+                    ]
+                    pres = subprocess.run(probe_cmd, capture_output=True, text=True, timeout=10)
+                    if pres.returncode == 0:
+                        pinfo = json.loads(pres.stdout)
+                        vstream = next((s for s in pinfo.get("streams", []) if s.get("codec_name")), {})
+                        nb = vstream.get("nb_frames")
+                        if nb and str(nb).isdigit():
+                            total_frames = int(nb)
+                            if elapsed_sec > 0:
+                                avg_fps = total_frames / elapsed_sec
+                except Exception:
+                    pass
+
+            if avg_fps <= 0.0 and total_frames > 0 and elapsed_sec > 0:
+                avg_fps = total_frames / elapsed_sec
+
+            updated_stats = self._save_export_stat(
+                device_key=device_key,
+                device_label=device_label,
+                codec=codec,
+                backend_info=backend_detail,
+                fps=avg_fps,
+                duration=elapsed_sec,
+                frames=total_frames
+            )
+
+            lines = [
+                I18n.tr("export_success_title"),
+                f"Plik: {self._export_out_path}",
+                "",
+                I18n.tr("export_current_title"),
+                f"  • {I18n.tr('export_stat_device')}: {device_label}",
+                f"  • {I18n.tr('export_stat_codec')}: {codec} ({backend_detail})",
+                f"  • {I18n.tr('export_stat_time')}: {elapsed_sec:.2f}s",
+                f"  • {I18n.tr('export_stat_fps')}: {avg_fps:.1f} fps",
+                f"  • {I18n.tr('export_stat_frames')}: {total_frames}",
+            ]
+
+            if self._active_backend == "d3d11" and self._last_gpu_metrics:
+                m = self._last_gpu_metrics
+                lines.extend([
+                    "",
+                    "Bramka D3D11 Zero-Copy:",
+                    f"  • Transfery RAM (download): {m.get('full_frame_hwdownload_count', 0)}",
+                    f"  • Transfery RAM (upload): {m.get('full_frame_hwupload_count', 0)}",
+                    f"  • Klatki programowe: {m.get('software_frame_count', 0)}",
+                    f"  • Upload telemetrii: {m.get('telemetry_texture_uploads', 0)} ({m.get('telemetry_uploaded_bytes', 0) // 1024} KB)",
+                ])
+
+            lines.extend([
+                "",
+                I18n.tr("export_summary_title"),
+                self._format_export_stats_summary(updated_stats),
+            ])
+
+            msg = "\n".join(lines)
+            QMessageBox.information(self, I18n.tr("btn_export"), msg)
         else:
             native_err = self._last_gpu_error or ("no success completion received" if self._active_backend == "d3d11" else "none")
             tail = '\n'.join(self._export_log.splitlines()[-15:])[-3000:]
